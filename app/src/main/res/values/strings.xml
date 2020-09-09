@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CopyScan</string>
+    <string name="btnCapture">Take Photo</string>
+    <string name="recognitionoverlaydescription">recognitionOverlay</string>
+</resources>

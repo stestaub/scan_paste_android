@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1094800544706",
+    "firebase_url": "https://nodal-algebra-767.firebaseio.com",
+    "project_id": "nodal-algebra-767",
+    "storage_bucket": "nodal-algebra-767.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1094800544706:android:e7dcadcc82298d58147c5b",
+        "android_client_info": {
+          "package_name": "ch.innodrive.copyscan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1094800544706-l85rf4s2ldncadch3na18do0pltm34q0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-5fJdL5PCtruZmv5PFutQ1OojM1ieLxU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1094800544706-l85rf4s2ldncadch3na18do0pltm34q0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
