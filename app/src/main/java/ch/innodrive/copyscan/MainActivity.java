@@ -2,19 +2,22 @@ package ch.innodrive.copyscan;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.media.Image;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
-import android.widget.Button;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -32,7 +35,6 @@ import java.util.concurrent.Executors;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.AspectRatio;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
@@ -49,43 +51,29 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "CameraXBasic";
 
     private ExecutorService cameraExecutor;
+    private TextAnalyzer textAnalyzer;
+
     private ImageView overlayView;
     private Bitmap overlay;
     private PreviewView viewFinder;
+    private Text ocrResults;
 
-    private class TextAnalyser implements ImageAnalysis.Analyzer {
+    private String channelId = "50e26865b125dd6faa9c8647158f6f64c6bf619304a81ff72d1f522f455334";
 
-        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-        @Override
-        public void analyze(@NonNull ImageProxy imageProxy) {
-            @SuppressLint("UnsafeExperimentalUsageError")
-            Image mediaImage = imageProxy.getImage();
-
-            if (mediaImage != null) {
-                try {
-                    InputImage image =
-                            InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
-                    TextRecognizer recognizer = TextRecognition.getClient();
-                    recognizer.process(image)
-                            .addOnSuccessListener(visionText -> {
-                                // Task completed successfully
-                                Log.d(TAG, "imageSize: " + imageProxy.getHeight() + "x" + imageProxy.getWidth());
-                                imageProxy.close();
-                                updateOverlay(visionText);
-                            })
-                            .addOnFailureListener(
-                                    e -> {
-                                        // Task failed with an exception
-                                        // ...
-                                        Log.e(TAG, "analyze: Failed to analyse", e);
-                                        imageProxy.close();
-                                    });;
+    private boolean onTouch(View view, MotionEvent motionEvent) {
+        switch (motionEvent.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                Text.TextBlock res = findTappedBlock(Math.round(motionEvent.getX()), Math.round(motionEvent.getY()));
+                if (res != null) {
+                    store(res.getText());
                 }
-                catch (Exception e) {
-                    Log.e(TAG, "analyze: Error analyzing image", e);
-                }
-            }
+                break;
+            case MotionEvent.ACTION_MOVE:
+            case MotionEvent.ACTION_UP:
+            default:
+                break;
         }
+        return false;
     }
 
     private void updateOverlay(Text textResults) {
@@ -104,22 +92,23 @@ public class MainActivity extends AppCompatActivity {
         }
         runOnUiThread(
                 () -> {
+                    ocrResults = textResults;
                     overlayView.setImageBitmap(overlay);
                 }
         );
     }
 
-    private void copy() {
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("pastebin");
-    }
-
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        readChannelIdFromIntent();
+
         setContentView(R.layout.activity_main);
         overlayView = findViewById(R.id.imageView);
         viewFinder = findViewById(R.id.viewFinder);
+        textAnalyzer = new TextAnalyzer();
+        textAnalyzer.setOnSuccessListener(this::updateOverlay);
 
         if (allPermissionsGranted()) {
             startCamera();
@@ -128,6 +117,40 @@ public class MainActivity extends AppCompatActivity {
                     this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
         }
         cameraExecutor = Executors.newSingleThreadExecutor();
+        overlayView.setOnTouchListener(this::onTouch);
+
+
+    }
+
+    private void readChannelIdFromIntent() {
+        Bundle extras = getIntent().getExtras();
+        if (extras == null) { return; }
+
+        String channelId = extras.getString("channel_id");
+        if(channelId != null && !channelId.isEmpty()) {
+            this.channelId = channelId;
+        }
+    }
+
+    private void store(String text) {
+        if(channelId == null || channelId.isEmpty()) {
+            return;
+        }
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("channels/" + channelId);
+        myRef.setValue(text);
+    }
+
+    private Text.TextBlock findTappedBlock(int x, int y) {
+        Text.TextBlock res = null;
+        for (Text.TextBlock block: this.ocrResults.getTextBlocks()) {
+            Rect bb =  block.getBoundingBox();
+            if(bb != null && bb.contains(x, y)) {
+                res = block;
+                break;
+            }
+        }
+        return res;
     }
 
     @Override
@@ -174,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
                         .setTargetRotation(viewFinder.getDisplay().getRotation())
                         .build();
 
-                imageAnalyzer.setAnalyzer(cameraExecutor, new TextAnalyser());
+                imageAnalyzer.setAnalyzer(cameraExecutor, textAnalyzer);
 
                 cameraProvider.unbindAll();
                 // Bind use cases to camera
