@@ -2,10 +2,7 @@ package ch.innodrive.copyscan;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.os.Bundle;
-import android.util.Size;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;

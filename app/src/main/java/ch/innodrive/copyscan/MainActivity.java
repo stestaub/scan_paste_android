@@ -26,13 +26,19 @@ public class MainActivity extends AppCompatActivity {
     private Button btnDisconnect;
     private IntentIntegrator qrScan;
     private TextView channel;
+    private View connectedView;
+    private View disconnectedView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        btnConnect = findViewById(R.id.button);
+        btnConnect = findViewById(R.id.btn_connect);
         btnDisconnect = findViewById(R.id.disconnect);
+
+        connectedView = findViewById(R.id.connected_view);
+        disconnectedView = findViewById(R.id.disconnected_view);
+
         btnConnect.setOnClickListener(view -> startQrScan());
         btnDisconnect.setOnClickListener(view -> disconnect());
         channel = findViewById(R.id.scan_result);
@@ -109,9 +115,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyConnectedState() {
-        btnConnect.setVisibility(View.GONE);
-        btnDisconnect.setVisibility(View.VISIBLE);
-        channel.setText("Connected to: \n" + getConnectedDeviceString());
+        connectedView.setVisibility(View.VISIBLE);
+        disconnectedView.setVisibility(View.GONE);
+        channel.setText(getConnectedDeviceString());
     }
 
     private String getConnectedDeviceString() {
@@ -133,9 +139,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyDisconnectedState() {
-        btnConnect.setVisibility(View.VISIBLE);
-        btnDisconnect.setVisibility(View.GONE);
-        channel.setText("Scan the QR Code in the browser extension to connect to browser");
+        disconnectedView.setVisibility(View.VISIBLE);
+        connectedView.setVisibility(View.GONE);
+        channel.setText("");
     }
 
     private void disconnect() {
@@ -166,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void startQrScan() {
+        qrScan.setOrientationLocked(false);
         qrScan.initiateScan();
     }
 }

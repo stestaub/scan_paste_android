@@ -11,6 +11,13 @@
 
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
-    <string name="button_add_device">Add Device</string>
-    <string name="button_disconnect">DIsconnect</string>
+    <string name="button_add_device">Connect</string>
+    <string name="button_disconnect">Disconnect</string>
+    <string name="connection_title">Connected to:</string>
+    <string name="scan_short_help">To start scanning, click the Scan icon on a Text-Field in your connected browser:</string>
+    <string name="help_title">Help</string>
+    <string name="connect_browser_title">Connect Browser</string>
+    <string name="connect_browser_help_1">1. Install Browser Extension \"Scan\'n\'Paste\" on your Computer</string>
+    <string name="connect_browser_help_2">2. Open the extension by clicking on the icon in the Browser bar</string>
+    <string name="connect_browser_help_3">3. Click Connect below and Scan the QR Code to connect your Phone</string>
 </resources>
