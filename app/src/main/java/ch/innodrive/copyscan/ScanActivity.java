@@ -1,18 +1,13 @@
 package ch.innodrive.copyscan;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Size;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -20,14 +15,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.mlkit.vision.text.Text;
 
-import org.json.JSONObject;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
@@ -46,17 +38,22 @@ public class ScanActivity extends AppCompatActivity {
     private ExecutorService cameraExecutor;
     private TextAnalyzer textAnalyzer;
 
-    private ImageView overlayView;
-    private Bitmap overlay;
+    private Preview previewUseCase;
+    private ProcessCameraProvider cameraProvider;
+    private CameraSelector cameraSelector;
+    private ImageAnalysis imageAnalyzer;
+
+    private GraphicOverlay overlayView;
     private PreviewView viewFinder;
-    private Text ocrResults;
+    private TextOverlay overlay;
 
     private String scanRequest = "50e26865b125dd6faa9c8647158f6f64c6bf619304a81ff72d1f522f455334";
+    private boolean needUpdateGraphicOverlayImageSourceInfo;
 
     private boolean onTouch(View view, MotionEvent motionEvent) {
         switch (motionEvent.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                Text.TextBlock res = findTappedBlock(Math.round(motionEvent.getX()), Math.round(motionEvent.getY()));
+                Text.Line res = findTappedBlock(Math.round(motionEvent.getX()), Math.round(motionEvent.getY()));
                 if (res != null) {
                     store(res.getText());
                     finish();
@@ -71,30 +68,15 @@ public class ScanActivity extends AppCompatActivity {
     }
 
     private void updateOverlay(Text textResults) {
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        paint.setColor(Color.RED);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(10f);
-        overlay = Bitmap.createBitmap(viewFinder.getWidth(), viewFinder.getHeight(), Bitmap.Config.ARGB_8888);
-        for (Text.TextBlock block :
-                textResults.getTextBlocks()) {
-            if(block.getBoundingBox() != null) {
-                Canvas canvas = new Canvas(overlay);
-                canvas.drawRect(block.getBoundingBox(), paint);
-            }
-        }
-        runOnUiThread(
-                () -> {
-                    ocrResults = textResults;
-                    overlayView.setImageBitmap(overlay);
-                }
-        );
+        overlayView.clear();
+        overlay = new TextOverlay(overlayView, textResults);
+        overlayView.add(overlay);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
         readScanRquestFromIntent();
 
         setContentView(R.layout.activity_scan);
@@ -113,6 +95,12 @@ public class ScanActivity extends AppCompatActivity {
 
         cameraExecutor = Executors.newSingleThreadExecutor();
         overlayView.setOnTouchListener(this::onTouch);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        this.cameraExecutor.shutdownNow();
     }
 
     private void readScanRquestFromIntent() {
@@ -134,16 +122,8 @@ public class ScanActivity extends AppCompatActivity {
         myRef.setValue(text);
     }
 
-    private Text.TextBlock findTappedBlock(int x, int y) {
-        Text.TextBlock res = null;
-        for (Text.TextBlock block: this.ocrResults.getTextBlocks()) {
-            Rect bb =  block.getBoundingBox();
-            if(bb != null && bb.contains(x, y)) {
-                res = block;
-                break;
-            }
-        }
-        return res;
+    private Text.Line findTappedBlock(int x, int y) {
+        return overlay.intersect(x, y);
     }
 
     @Override
@@ -169,33 +149,62 @@ public class ScanActivity extends AppCompatActivity {
         return granted;
     }
 
+    private void bindPreviewUseCase() {
+        if (cameraProvider == null) {
+            return;
+        }
+        if (previewUseCase != null) {
+            cameraProvider.unbind(previewUseCase);
+        }
+
+        previewUseCase = new Preview.Builder()
+                .build();
+        previewUseCase.setSurfaceProvider(viewFinder.createSurfaceProvider());
+        cameraProvider.bindToLifecycle(this, cameraSelector, previewUseCase);
+    }
+
+    private void bindAnalysisUseCase() {
+        if(cameraProvider == null) {
+            return;
+        }
+        if (imageAnalyzer != null) {
+            cameraProvider.unbind(imageAnalyzer);
+        }
+        needUpdateGraphicOverlayImageSourceInfo = true;
+
+        imageAnalyzer = new ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
+                .build();
+
+        imageAnalyzer.setAnalyzer(
+                ContextCompat.getMainExecutor(this),
+                imageProxy-> {
+                    if (needUpdateGraphicOverlayImageSourceInfo) {
+                        int rotationDegrees = imageProxy.getImageInfo().getRotationDegrees();
+                        if (rotationDegrees == 0 || rotationDegrees == 180) {
+                            overlayView.setImageSourceInfo(
+                                    imageProxy.getWidth(), imageProxy.getHeight(), false);
+                        } else {
+                            overlayView.setImageSourceInfo(
+                                    imageProxy.getHeight(), imageProxy.getWidth(), false);
+                        }
+                        needUpdateGraphicOverlayImageSourceInfo = false;
+                    }
+                    textAnalyzer.analyze(imageProxy);
+                });
+        cameraProvider.bindToLifecycle(this, cameraSelector, imageAnalyzer);
+    }
+
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
 
             try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-
-                Preview preview = new Preview.Builder()
-                        .setTargetResolution(new Size(viewFinder.getWidth(), viewFinder.getHeight()))
-                        .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
-                        .build();
-
-                preview.setSurfaceProvider(viewFinder.createSurfaceProvider());
-
-                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
-
-                ImageAnalysis imageAnalyzer = new ImageAnalysis.Builder()
-                        .setTargetResolution(new Size(viewFinder.getWidth(), viewFinder.getHeight()))
-                        .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
-                        .build();
-
-                imageAnalyzer.setAnalyzer(cameraExecutor, textAnalyzer);
-
+                cameraProvider = cameraProviderFuture.get();
                 cameraProvider.unbindAll();
-                // Bind use cases to camera
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer);
-
+                bindPreviewUseCase();
+                bindAnalysisUseCase();
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
