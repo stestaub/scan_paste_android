@@ -22,18 +22,47 @@
             android:layout_height="wrap_content"
             android:text="@string/connection_title"
             android:textSize="24sp" />
-        <TextView
-            android:id="@+id/scan_result"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <Button
-            android:id="@+id/disconnect"
-            style="@style/Theme.AppCompat.DayNight.DarkActionBar"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="20dp"
-            android:text="@string/button_disconnect" />
+            android:background="@android:color/white"
+            android:layout_marginBottom="40sp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/deviceImage"
+                android:layout_height="40sp"
+                android:layout_width="40sp"
+                android:layout_margin="10sp"
+                android:src="@drawable/ic_chrome"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/scan_result"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Windows 10, Chrome 65"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/deviceImage"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageButton
+                android:id="@+id/disconnect"
+                android:background="@color/zxing_transparent"
+                android:tint="@color/colorPrimaryDark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_remove"
+                android:maxWidth="20sp"
+                android:text="@string/button_disconnect"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
 
         <TextView
             android:layout_width="wrap_content"
@@ -55,8 +84,11 @@
         android:id="@+id/disconnected_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@android:color/white"
         android:layout_margin="20dp"
         android:orientation="vertical"
+        android:paddingHorizontal="10sp"
+        android:paddingVertical="10sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -67,19 +99,57 @@
             android:layout_height="wrap_content"
             android:text="@string/connect_browser_title"
             android:textSize="24sp" />
-        <TextView
-            android:text="@string/connect_browser_help_1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <TextView
-            android:text="@string/connect_browser_help_2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-        <TextView
-            android:text="@string/connect_browser_help_3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+       <androidx.appcompat.widget.LinearLayoutCompat
+           android:layout_width="match_parent"
+           android:layout_height="wrap_content"
+           android:gravity="center_vertical"
+           android:padding="20sp">
 
+           <TextView
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content"
+               android:layout_marginEnd="10sp"
+               android:text="1."
+               android:textSize="24sp" />
+           <TextView
+               android:layout_width="match_parent"
+               android:layout_height="wrap_content"
+               android:text="@string/connect_browser_help_1"/>
+       </androidx.appcompat.widget.LinearLayoutCompat>
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:padding="20sp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10sp"
+                android:text="2."
+                android:textSize="24sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/connect_browser_help_2"/>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:padding="20sp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10sp"
+                android:text="3."
+                android:textSize="24sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/connect_browser_help_3"/>
+        </androidx.appcompat.widget.LinearLayoutCompat>
         <Button
             android:id="@+id/btn_connect"
             style="@android:style/Widget.Material.Light.Button"
@@ -87,10 +157,13 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="50sp"
             android:layout_marginBottom="20sp"
+            android:padding="10sp"
             android:background="#FFFFFF"
             android:text="@string/button_add_device"
             android:textColor="@color/colorAccent"
-            android:textSize="25sp"
+            android:textSize="18sp"
+            android:drawableTint="@color/colorAccent"
+            android:drawableTop="@drawable/baseline_link_black_18dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
