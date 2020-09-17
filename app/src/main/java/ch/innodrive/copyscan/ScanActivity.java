@@ -3,11 +3,14 @@ package ch.innodrive.copyscan;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.mlkit.vision.text.Text;
@@ -46,6 +49,7 @@ public class ScanActivity extends AppCompatActivity {
 
     private String scanRequest = "50e26865b125dd6faa9c8647158f6f64c6bf619304a81ff72d1f522f455334";
     private boolean needUpdateGraphicOverlayImageSourceInfo;
+    private FirebaseAuth mAuth;
 
     private boolean onTouch(View view, MotionEvent motionEvent) {
         switch (motionEvent.getAction()) {
@@ -74,6 +78,10 @@ public class ScanActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+
+        mAuth = FirebaseAuth.getInstance();
+        mAuth.signInAnonymously();
+
         readScanRquestFromIntent();
 
         setContentView(R.layout.activity_scan);
@@ -81,8 +89,8 @@ public class ScanActivity extends AppCompatActivity {
         viewFinder = findViewById(R.id.viewFinder);
         textAnalyzer = new TextAnalyzer();
         textAnalyzer.setOnSuccessListener(this::updateOverlay);
-
         super.onPostCreate(savedInstanceState);
+
         if (allPermissionsGranted()) {
             startCamera();
         } else {
@@ -116,7 +124,16 @@ public class ScanActivity extends AppCompatActivity {
         }
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("request/" + scanRequest + "/result");
-        myRef.setValue(text);
+        myRef.setValue(text).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Log.d(TAG, "successfully updated scan result");
+            }
+            else {
+                Log.e(TAG, "Unable to write scanresult");
+                Log.i(TAG, "Current user is; " + mAuth.getUid());
+                Log.e(TAG, task.getException().getLocalizedMessage());
+            }
+        });
     }
 
     private Text.Line findTappedBlock(int x, int y) {

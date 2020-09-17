@@ -5,12 +5,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.zxing.integration.android.IntentIntegrator;
@@ -23,28 +26,97 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
     private Button btnConnect;
     private ImageButton btnDisconnect;
     private IntentIntegrator qrScan;
+
+    private Button btnRetry;
+    private TextView errorMessage;
     private TextView channel;
     private View connectedView;
     private View disconnectedView;
+    private View errorView;
+
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mAuth = FirebaseAuth.getInstance();
+
         setContentView(R.layout.activity_main);
         btnConnect = findViewById(R.id.btn_connect);
         btnDisconnect = findViewById(R.id.disconnect);
+        btnRetry = findViewById(R.id.btn_retry);
 
         connectedView = findViewById(R.id.connected_view);
         disconnectedView = findViewById(R.id.disconnected_view);
+        errorView = findViewById(R.id.error_panel);
 
         btnConnect.setOnClickListener(view -> startQrScan());
         btnDisconnect.setOnClickListener(view -> disconnect());
+        btnRetry.setOnClickListener(view -> reconnect());
+        errorMessage = findViewById(R.id.error_message);
         channel = findViewById(R.id.scan_result);
         qrScan = new IntentIntegrator(this);
 
+    }
+
+    private void reconnect() {
+        signIn();
+    }
+
+    public void signIn() {
+
+        mAuth.signInAnonymously()
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        // Sign in success, update UI with the signed-in user's information
+                        Log.d(TAG, "signInAnonymously:success");
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        updateUI(user);
+                    } else {
+                        // If sign in fails, display a message to the user.
+                        Log.w(TAG, "signInAnonymously:failure", task.getException());
+                        updateUI(null);
+                    }
+                });
+
+    }
+
+    public void showError(String message) {
+        connectedView.setVisibility(View.GONE);
+        disconnectedView.setVisibility(View.GONE);
+        errorView.setVisibility(View.VISIBLE);
+        errorMessage.setText(message);
+    }
+
+    private void hideError() {
+        errorView.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Check if user is signed in (non-null) and update UI accordingly.
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if(currentUser == null) {
+            signIn();
+        }
+        else {
+            updateUI(currentUser);
+        }
+    }
+
+    public void updateUI(FirebaseUser currentUser) {
+        if (currentUser == null) {
+            showError(getResources().getString(R.string.connection_error));
+            return;
+        }
+
+        hideError();
         if(isConnected()) {
             applyConnectedState();
         } else {
@@ -128,15 +200,7 @@ public class MainActivity extends AppCompatActivity {
         String browserName = sharedPreferences.getString("browserName", "Unknown");
         String browserVersion = sharedPreferences.getString("browserVersion", "Unknown");
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(osName)
-                .append(" ")
-                .append(osVersion)
-                .append(" - ")
-                .append(browserName)
-                .append(" ")
-                .append(browserVersion);
-        return sb.toString();
+        return String.format("%s %s - %s %s", osName, osVersion, browserName, browserVersion);
     }
 
     private void applyDisconnectedState() {
@@ -167,7 +231,10 @@ public class MainActivity extends AppCompatActivity {
     private void applyDeviceIdToChannel(String channelId) {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("channels/" + channelId);
-        DeviceInfo data = new DeviceInfo(MyFirebaseMessagingService.getToken(this), Build.MODEL);
+        DeviceInfo data = new DeviceInfo(
+                MyFirebaseMessagingService.getToken(this),
+                Build.MODEL,
+                mAuth.getUid());
         myRef.setValue(data);
     }
 

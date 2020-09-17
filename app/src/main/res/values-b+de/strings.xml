@@ -11,4 +11,6 @@
     <string name="connect_browser_help_1">Browser Extension \"Scan\'n\'Paste\" auf Ihrem PC installieren und aktiviern.</string>
     <string name="connect_browser_help_2">Auf das Scan\'n\'Paste Icon in Ihrem Browser klicken.</string>
     <string name="connect_browser_help_3">Auf "Verbinden" klicken und den QR Code auf Ihrem browser scannen.</string>
+    <string name="lbl_retry">Erneut versuchen</string>
+    <string name="connection_error">Fehler beim Verbinden</string>
 </resources>

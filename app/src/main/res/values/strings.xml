@@ -11,4 +11,6 @@
     <string name="connect_browser_help_1">Install Browser Extension \"Scan\'n\'Paste\" on your Computer</string>
     <string name="connect_browser_help_2">Open the extension by clicking on the icon in the Browser bar</string>
     <string name="connect_browser_help_3">Click Connect below and Scan the QR Code to connect your Phone</string>
+    <string name="lbl_retry">Erneut versuchen</string>
+    <string name="connection_error">Fehler beim Verbinden</string>
 </resources>
