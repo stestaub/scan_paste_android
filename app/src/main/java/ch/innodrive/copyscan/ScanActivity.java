@@ -173,7 +173,7 @@ public class ScanActivity extends AppCompatActivity {
 
         previewUseCase = new Preview.Builder()
                 .build();
-        previewUseCase.setSurfaceProvider(viewFinder.createSurfaceProvider());
+        previewUseCase.setSurfaceProvider(viewFinder.getSurfaceProvider());
         cameraProvider.bindToLifecycle(this, cameraSelector, previewUseCase);
     }
 
