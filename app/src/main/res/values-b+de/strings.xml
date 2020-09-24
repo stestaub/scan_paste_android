@@ -1,16 +1,16 @@
 <resources>
-    <string name="app_name">Scan\'n\'paste</string>
+    <string name="app_name">Scan\'n\'Paste</string>
     <string name="recognitionoverlaydescription">recognitionOverlay</string>
     <string name="title_activity_connect_channels">Gerät Verbinden</string>
     <string name="button_add_device">Verbinden</string>
     <string name="button_disconnect">Trennen</string>
-    <string name="connection_title">Verbundene Applikationen:</string>
+    <string name="connection_title">Verbundenes Gerät:</string>
     <string name="scan_short_help">Klicken sie auf das Scan Symbol bei einem Textfeld in ihrem Browser um einen Text zu Scannen:</string>
     <string name="help_title">Hilfe</string>
     <string name="connect_browser_title">Erste Schritte</string>
     <string name="connect_browser_help_1">Browser Extension \"Scan\'n\'Paste\" auf Ihrem PC installieren und aktiviern.</string>
     <string name="connect_browser_help_2">Auf das Scan\'n\'Paste Icon in Ihrem Browser klicken.</string>
-    <string name="connect_browser_help_3">Auf "Verbinden" klicken und den QR Code auf Ihrem browser scannen.</string>
+    <string name="connect_browser_help_3">Auf "QR-Scannen" klicken und den QR Code auf Ihrem Browser scannen.</string>
     <string name="lbl_retry">Erneut versuchen</string>
     <string name="connection_error">Fehler beim Verbinden</string>
 </resources>

@@ -8,9 +8,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Task;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.mlkit.vision.text.Text;
@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -82,14 +83,13 @@ public class ScanActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mAuth.signInAnonymously();
 
-        readScanRquestFromIntent();
+        readScanRequestFromIntent();
 
         setContentView(R.layout.activity_scan);
         overlayView = findViewById(R.id.imageView);
         viewFinder = findViewById(R.id.viewFinder);
         textAnalyzer = new TextAnalyzer();
         textAnalyzer.setOnSuccessListener(this::updateOverlay);
-        super.onPostCreate(savedInstanceState);
 
         if (allPermissionsGranted()) {
             startCamera();
@@ -108,7 +108,7 @@ public class ScanActivity extends AppCompatActivity {
         this.cameraExecutor.shutdownNow();
     }
 
-    private void readScanRquestFromIntent() {
+    private void readScanRequestFromIntent() {
         Bundle extras = getIntent().getExtras();
         if (extras == null) { return; }
 
@@ -129,11 +129,18 @@ public class ScanActivity extends AppCompatActivity {
                 Log.d(TAG, "successfully updated scan result");
             }
             else {
-                Log.e(TAG, "Unable to write scanresult");
+                Log.e(TAG, "Unable to write scan result");
                 Log.i(TAG, "Current user is; " + mAuth.getUid());
-                Log.e(TAG, task.getException().getLocalizedMessage());
+                safeLogTaskException(task);
             }
         });
+    }
+
+    private void safeLogTaskException(Task<Void> task) {
+        Exception e = task.getException();
+        if(e != null && e.getLocalizedMessage() != null) {
+            Log.e(TAG, e.getLocalizedMessage());
+        }
     }
 
     private Text.Line findTappedBlock(int x, int y) {
@@ -142,6 +149,7 @@ public class ScanActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResult) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResult);
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (this.allPermissionsGranted()) {
                 startCamera();
@@ -171,8 +179,7 @@ public class ScanActivity extends AppCompatActivity {
             cameraProvider.unbind(previewUseCase);
         }
 
-        previewUseCase = new Preview.Builder()
-                .build();
+        previewUseCase = new Preview.Builder().build();
         previewUseCase.setSurfaceProvider(viewFinder.getSurfaceProvider());
         cameraProvider.bindToLifecycle(this, cameraSelector, previewUseCase);
     }
@@ -195,19 +202,23 @@ public class ScanActivity extends AppCompatActivity {
                 ContextCompat.getMainExecutor(this),
                 imageProxy-> {
                     if (needUpdateGraphicOverlayImageSourceInfo) {
-                        int rotationDegrees = imageProxy.getImageInfo().getRotationDegrees();
-                        if (rotationDegrees == 0 || rotationDegrees == 180) {
-                            overlayView.setImageSourceInfo(
-                                    imageProxy.getWidth(), imageProxy.getHeight(), false);
-                        } else {
-                            overlayView.setImageSourceInfo(
-                                    imageProxy.getHeight(), imageProxy.getWidth(), false);
-                        }
+                        updateGraphicOverlyImageSourceInfo(imageProxy);
                         needUpdateGraphicOverlayImageSourceInfo = false;
                     }
                     textAnalyzer.analyze(imageProxy);
                 });
         cameraProvider.bindToLifecycle(this, cameraSelector, imageAnalyzer);
+    }
+
+    private void updateGraphicOverlyImageSourceInfo(ImageProxy imageProxy) {
+        int rotationDegrees = imageProxy.getImageInfo().getRotationDegrees();
+        if (rotationDegrees == 0 || rotationDegrees == 180) {
+            overlayView.setImageSourceInfo(
+                    imageProxy.getWidth(), imageProxy.getHeight(), false);
+        } else {
+            overlayView.setImageSourceInfo(
+                    imageProxy.getHeight(), imageProxy.getWidth(), false);
+        }
     }
 
     private void startCamera() {
