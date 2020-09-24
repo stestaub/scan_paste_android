@@ -1,5 +1,7 @@
 package ch.innodrive.copyscan;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -27,6 +29,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+    private static final String CHANNEL_ID = "ch.innodirve.copyscan.ScanRequest";
     private Button btnConnect;
     private ImageButton btnDisconnect;
     private IntentIntegrator qrScan;
@@ -62,12 +65,31 @@ public class MainActivity extends AppCompatActivity {
         channel = findViewById(R.id.scan_result);
         qrScan = new IntentIntegrator(this);
 
+        createNotificationChannel();
     }
 
     private void reconnect() {
         signIn();
     }
 
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            channel.setShowBadge(true);
+            channel.setVibrationPattern(new long[] { 500, 500 });
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+    
     public void signIn() {
 
         mAuth.signInAnonymously()

@@ -13,4 +13,6 @@
     <string name="connect_browser_help_3">Auf "QR-Scannen" klicken und den QR Code auf Ihrem Browser scannen.</string>
     <string name="lbl_retry">Erneut versuchen</string>
     <string name="connection_error">Fehler beim Verbinden</string>
+    <string name="channel_name">Scan Request</string>
+    <string name="channel_description">Benachrichtigung für Scan Anfragen</string>
 </resources>
